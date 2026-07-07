@@ -10,3 +10,9 @@ RUN docker-php-ext-install pdo pdo_pgsql
 # Apache should serve this project as the document root directly,
 # so visiting http://localhost:8080/ works with BASE_URL=''
 WORKDIR /var/www/html
+
+# Copy the project into the image. Locally, docker-compose's volume mount
+# overrides this with your live folder - but Render builds from the
+# Dockerfile alone with no volume mount, so without this COPY the deployed
+# container would have no application files in it at all.
+COPY . /var/www/html
