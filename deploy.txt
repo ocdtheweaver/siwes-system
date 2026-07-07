@@ -1,0 +1,181 @@
+================================================================
+ HOW TO DEPLOY THE SIWES SYSTEM TO A LIVE WEB SERVER
+================================================================
+
+This guide covers two common ways to put the system on the internet:
+
+  OPTION A: Shared hosting with cPanel (cheapest, easiest - good for
+            a school demo/defense or a small single-institution rollout)
+  OPTION B: A VPS / cloud server (more control, needed for higher traffic)
+
+Pick the one that matches what you have access to.
+
+
+================================================================
+BEFORE YOU DEPLOY ANYWHERE: REQUIREMENTS
+================================================================
+Your host must provide:
+  - PHP 8.0 or higher
+  - MySQL or MariaDB
+  - The PDO MySQL extension enabled for PHP (almost always on by default)
+
+Nearly all Nigerian shared hosting providers (Web4Africa, Whogohost,
+QServers, etc.) and any standard cPanel host meet these requirements.
+
+
+================================================================
+OPTION A: SHARED HOSTING WITH cPanel
+================================================================
+
+STEP 1 - Buy hosting + a domain (or use a free subdomain your host offers)
+   Skip this if you already have hosting.
+
+STEP 2 - Create the database in cPanel
+   1. Log in to cPanel.
+   2. Find and click "MySQL Databases".
+   3. Under "Create New Database", type a name (e.g. siwes_system)
+      and click "Create Database".
+      NOTE: cPanel will usually prefix it automatically, e.g.
+      yourcpanelusername_siwes_system - remember this FULL name.
+   4. Scroll to "MySQL Users" -> "Add New User". Choose a username
+      and a strong password. Click "Create User".
+      NOTE: cPanel prefixes this too, e.g. yourcpanelusername_siwesuser.
+   5. Scroll to "Add User to Database". Choose the user and database
+      you just made, click "Add", then on the next screen tick
+      "ALL PRIVILEGES" and click "Make Changes".
+   6. Write down: the full database name, the full username, and the
+      password. You need all three in Step 4 below.
+
+STEP 3 - Upload the files
+   Option 1 (easiest): cPanel "File Manager"
+   1. In cPanel, open "File Manager".
+   2. Go into the "public_html" folder (this is your website's root).
+      - If you want the site at yourdomain.com/siwes, create a folder
+        called "siwes" inside public_html and go into it.
+      - If you want it at yourdomain.com directly, stay in public_html
+        itself (make sure it's otherwise empty, or back up what's there).
+   3. Click "Upload", and upload the siwes-system.zip file.
+   4. Once uploaded, right-click the zip file and choose "Extract".
+   5. Move the extracted files so that index.php sits directly inside
+      the folder you chose (not inside an extra "siwes-system" sub-folder).
+
+   Option 2: FTP (FileZilla or similar)
+   1. Get your FTP host/username/password from cPanel ("FTP Accounts").
+   2. Connect with an FTP client and upload the whole project folder's
+      CONTENTS into public_html (or a sub-folder, same idea as above).
+
+STEP 4 - Configure the app
+   1. In File Manager (or via FTP), open config/db.php and edit it:
+        define('DB_HOST', 'localhost');
+        define('DB_NAME', 'yourcpanelusername_siwes_system');
+        define('DB_USER', 'yourcpanelusername_siwesuser');
+        define('DB_PASS', 'the-password-you-set-in-step-2');
+   2. Open config/config.php and set BASE_URL to match where you put
+      the files:
+        - Root of the domain  ->  define('BASE_URL', '');
+        - In a /siwes folder  ->  define('BASE_URL', '/siwes');
+
+STEP 5 - Import the database structure
+   1. In cPanel, open "phpMyAdmin".
+   2. Click on your database name in the left sidebar.
+   3. Click the "Import" tab, choose database/schema.sql, click "Go".
+
+STEP 6 - Create your accounts, then lock the door behind you
+   1. Visit yourdomain.com/(your-subfolder)/database/seed.php once.
+   2. Note the login details it prints.
+   3. DELETE database/seed.php using File Manager/FTP immediately
+      afterwards (leaving it live lets anyone recreate demo accounts).
+   4. Log in as admin and change the demo password (Admin@123) to
+      something only you know - there is currently no "change
+      password" screen built in, so do this by editing the database
+      row directly in phpMyAdmin: open the "users" table, find the
+      admin row, and replace password_hash with a new bcrypt hash.
+      The simplest way to generate one: temporarily create a file
+      called make_hash.php containing
+        <?php echo password_hash('YourNewPassword', PASSWORD_DEFAULT);
+      visit it in the browser, copy the output into phpMyAdmin, then
+      DELETE make_hash.php.
+
+STEP 7 - Visit your live site
+   yourdomain.com  (or yourdomain.com/siwes, depending on your setup)
+
+
+================================================================
+OPTION B: A VPS / CLOUD SERVER (Ubuntu example)
+================================================================
+Use this if you have a DigitalOcean/AWS/Linode/etc. server and SSH access.
+
+STEP 1 - Install the stack
+   sudo apt update
+   sudo apt install apache2 php php-mysql mariadb-server libapache2-mod-php -y
+
+STEP 2 - Secure and create the database
+   sudo mysql_secure_installation        (follow the prompts)
+   sudo mysql -u root -p
+     CREATE DATABASE siwes_system CHARACTER SET utf8mb4;
+     CREATE USER 'siwesuser'@'localhost' IDENTIFIED BY 'a-strong-password';
+     GRANT ALL PRIVILEGES ON siwes_system.* TO 'siwesuser'@'localhost';
+     FLUSH PRIVILEGES;
+     EXIT;
+
+STEP 3 - Upload the code
+   Use scp, rsync, or git to copy the siwes-system folder to the server,
+   e.g.:
+     scp -r siwes-system youruser@yourserver:/var/www/
+
+   Then move it into Apache's web root and fix ownership:
+     sudo mv /var/www/siwes-system /var/www/html/siwes-system
+     sudo chown -R www-data:www-data /var/www/html/siwes-system
+
+STEP 4 - Configure the app
+   Edit /var/www/html/siwes-system/config/db.php with the database
+   name/user/password from Step 2, and config/config.php's BASE_URL
+   to match the folder path (e.g. '/siwes-system', or '' if it's an
+   Apache vhost root).
+
+STEP 5 - Import the schema
+   mysql -u siwesuser -p siwes_system < /var/www/html/siwes-system/database/schema.sql
+
+STEP 6 - Create accounts and remove the seed script
+   Visit http://your-server-ip/siwes-system/database/seed.php once,
+   note the credentials, then delete the file:
+     sudo rm /var/www/html/siwes-system/database/seed.php
+
+STEP 7 - (Strongly recommended) Add a domain name and HTTPS
+   - Point your domain's DNS A record to the server's IP address.
+   - Install Certbot for a free SSL certificate:
+       sudo apt install certbot python3-certbot-apache -y
+       sudo certbot --apache -d yourdomain.com
+   - This automatically configures HTTPS and redirects http -> https.
+
+STEP 8 - Restart Apache and visit your site
+   sudo systemctl restart apache2
+   Visit https://yourdomain.com/siwes-system/
+
+
+================================================================
+SECURITY CHECKLIST BEFORE GOING LIVE (either option)
+================================================================
+[ ] Deleted (or renamed) database/seed.php after creating accounts
+[ ] Changed every demo password (admin, supervisors, student)
+[ ] config/db.php uses a dedicated database user, NOT a shared/root
+    account with access to other databases
+[ ] Site is served over HTTPS (padlock in the browser), not plain HTTP
+[ ] PHP error display is turned OFF in production (ask your host to
+    set display_errors = Off in php.ini, or add this near the top of
+    config/db.php: ini_set('display_errors', '0');)
+[ ] You have a recent backup of the database (phpMyAdmin -> Export,
+    or mysqldump on a VPS) before any future changes
+[ ] Only the admin account(s) you trust have the 'admin' role in the
+    users table
+
+
+================================================================
+UPDATING THE SITE LATER
+================================================================
+Shared hosting: upload the changed files again via File Manager/FTP,
+overwriting the old ones. Database structure changes (if any) must be
+applied manually through phpMyAdmin's SQL tab.
+
+VPS: copy the changed files over with scp/rsync/git pull, then:
+  sudo systemctl restart apache2   (usually not even required for PHP changes)

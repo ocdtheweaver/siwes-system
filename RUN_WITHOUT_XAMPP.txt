@@ -1,0 +1,198 @@
+================================================================
+ HOW TO RUN THE SIWES SYSTEM WITHOUT XAMPP
+================================================================
+This guide covers two alternatives to XAMPP:
+
+  OPTION A: Docker (recommended - one command, nothing to configure,
+            works the same on Windows, Mac, and Linux)
+  OPTION B: Installing PHP and MySQL directly on your computer and
+            using PHP's own built-in web server (no Apache needed)
+
+Pick whichever you're more comfortable with. If you have never used
+either Docker or a command line before, Option A is still simpler
+overall because the setup steps are fewer.
+
+
+================================================================
+OPTION A: DOCKER (recommended)
+================================================================
+
+WHAT YOU NEED
+-------------
+Docker Desktop, a free program that runs the whole stack (PHP, Apache,
+and MySQL) inside lightweight containers, so you don't install PHP or
+MySQL on your computer at all - Docker manages them for you.
+
+STEP 1 - Install Docker Desktop
+--------------------------------
+1. Go to: https://www.docker.com/products/docker-desktop/
+2. Download and install the version for your operating system.
+3. Open Docker Desktop once, and wait until it says it's running
+   (this can take a minute the first time).
+
+STEP 2 - Get the project files in one folder
+-----------------------------------------------
+Unzip siwes-system.zip (if you haven't already) so you have a folder
+called "siwes-system" containing index.php, docker-compose.yml, and
+the other project files all together.
+
+STEP 3 - Start everything with one command
+---------------------------------------------
+1. Open a terminal (Mac/Linux: "Terminal" app. Windows: "Command Prompt"
+   or "PowerShell").
+2. Move into the project folder. For example:
+     cd path/to/siwes-system
+   (Replace "path/to/siwes-system" with wherever you unzipped it. On
+   Windows this might look like: cd C:\Users\YourName\Downloads\siwes-system)
+3. Run:
+     docker compose up -d
+   The first time you run this, Docker will download PHP and MySQL
+   images and build the web container - this can take a few minutes
+   and needs an internet connection. Every time after that, it starts
+   in seconds.
+4. Wait about 15-20 seconds after the command finishes, to give the
+   database time to finish starting up inside its container.
+
+STEP 4 - Create your login accounts
+---------------------------------------
+1. In your browser, go to: http://localhost:8080/database/seed.php
+2. The page will print some ready-made login accounts (admin, demo
+   companies, a demo student). Write these down.
+3. Once you're done testing, you can stop this file being reachable
+   by removing it from the running container later, or simply by
+   running "docker compose down" when you're finished with this
+   environment for the session.
+
+STEP 5 - Open the system
+----------------------------
+Go to: http://localhost:8080/
+Log in with one of the accounts from Step 4, or register a new one.
+
+EVERY TIME YOU WANT TO USE IT AGAIN LATER
+---------------------------------------------
+1. Open a terminal, cd into the siwes-system folder.
+2. Run: docker compose up -d
+3. Visit http://localhost:8080/
+4. When you're done for the day, you can optionally run:
+     docker compose stop
+   (this pauses the containers without deleting your data; "docker
+   compose up -d" starts them again later).
+
+USEFUL DOCKER COMMANDS
+--------------------------
+  docker compose up -d        Start everything in the background
+  docker compose stop         Stop the containers (keeps your data)
+  docker compose down         Stop AND remove the containers (your
+                               database data is still kept, because it
+                               lives in a separate Docker "volume")
+  docker compose down -v      Stop, remove containers, AND delete the
+                               database data permanently (use this only
+                               if you want a completely fresh start)
+  docker compose logs -f web  Watch the web server's logs live, useful
+                               if a page isn't loading and you want to
+                               see the error
+
+TROUBLESHOOTING (DOCKER)
+----------------------------
+PROBLEM: "Database connection failed" right after first starting up.
+FIX: The database container needs a few seconds to initialise the
+     first time. Wait 20-30 seconds and refresh the page.
+
+PROBLEM: Port 8080 or 3306 is already in use.
+FIX: Edit docker-compose.yml and change the left-hand side of the
+     port mapping, e.g. change "8080:80" to "8081:80", then visit
+     http://localhost:8081/ instead. Same idea for "3306:3306" if
+     you already have another MySQL running on your machine.
+
+PROBLEM: I changed schema.sql but the database didn't update.
+FIX: schema.sql is only imported the FIRST time the database
+     container is created. If you need to re-import it, run:
+       docker compose down -v
+       docker compose up -d
+     (this wipes existing data and starts fresh).
+
+
+================================================================
+OPTION B: NATIVE PHP + MYSQL (no Apache, no Docker)
+================================================================
+This option uses PHP's own built-in development web server together
+with a standalone MySQL or MariaDB installation. It involves a few
+more manual steps than Option A.
+
+STEP 1 - Install PHP (8.0 or higher)
+----------------------------------------
+  Windows: Download from https://windows.php.net/download/ and add
+           the extracted folder to your PATH, OR install via
+           https://github.com/php/php-windows-builds releases.
+  Mac:     Open Terminal and run: brew install php
+           (requires Homebrew: https://brew.sh)
+  Linux:   sudo apt update && sudo apt install php php-mysql
+
+Confirm it worked by running:  php -v
+
+STEP 2 - Install MySQL or MariaDB
+-------------------------------------
+  Windows: Download MySQL Community Server from
+           https://dev.mysql.com/downloads/mysql/
+  Mac:     brew install mysql && brew services start mysql
+  Linux:   sudo apt install mariadb-server && sudo systemctl start mariadb
+
+Make a note of the root password you set (or whether it's blank).
+
+STEP 3 - Create the database
+--------------------------------
+1. Open a terminal and run:  mysql -u root -p
+   (enter your password, or just press Enter if there isn't one)
+2. At the "mysql>" prompt, run:
+     SOURCE /full/path/to/siwes-system/database/schema.sql;
+   (replace the path with the real location of the file on your
+   computer; on Windows use the full path with backslashes)
+3. Type:  exit
+
+STEP 4 - Tell the app your database password (if you set one)
+------------------------------------------------------------------
+Open config/db.php in a text editor and update DB_PASS if your MySQL
+root account has a password (leave it as '' if it doesn't).
+
+STEP 5 - Set BASE_URL to empty
+----------------------------------
+Open config/config.php and change the BASE_URL line to:
+   $envBaseUrl = getenv('APP_BASE_URL');
+   define('BASE_URL', $envBaseUrl !== false ? $envBaseUrl : '');
+(or simply set it to an empty string '' directly) since PHP's built-in
+server will serve the project folder itself as the website root.
+
+STEP 6 - Start PHP's built-in server
+----------------------------------------
+1. In a terminal, move into the project folder:
+     cd path/to/siwes-system
+2. Run:
+     php -S localhost:8000
+3. Leave this terminal window open - closing it stops the server.
+
+STEP 7 - Create your login accounts and open the system
+------------------------------------------------------------
+1. Visit: http://localhost:8000/database/seed.php
+   and note the login details it prints.
+2. Visit: http://localhost:8000/
+   and log in, or register a new account.
+
+EVERY TIME YOU WANT TO USE IT AGAIN LATER
+---------------------------------------------
+1. Make sure MySQL/MariaDB is running (brew services start mysql, or
+   sudo systemctl start mariadb, or it may already auto-start).
+2. cd into the siwes-system folder and run: php -S localhost:8000
+3. Visit http://localhost:8000/
+
+
+================================================================
+WHICH OPTION SHOULD I PICK?
+================================================================
+- Never used a terminal before, want the absolute fewest steps that
+  still avoid XAMPP: Option A (Docker).
+- Already have PHP and MySQL installed, or prefer not to install
+  Docker: Option B.
+- Want the original, most common approach for Nigerian university
+  project demonstrations: see run.txt (XAMPP), which remains the
+  simplest option for many examiners' computers since it needs no
+  command line at all.

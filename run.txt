@@ -1,0 +1,161 @@
+================================================================
+ HOW TO RUN THE SIWES SYSTEM ON YOUR OWN COMPUTER
+ (Written for someone who has never done this before. Take it
+ one step at a time - you cannot skip steps.)
+================================================================
+
+Don't want to install XAMPP? See RUN_WITHOUT_XAMPP.txt instead for
+a Docker-based option (or a native PHP+MySQL option) that skips
+Apache entirely. Otherwise, continue below.
+
+WHAT YOU NEED BEFORE YOU START
+--------------------------------
+1. A Windows, Mac, or Linux computer.
+2. An internet connection (just to download one program, one time).
+3. The "siwes-system" folder/zip file you were given.
+4. About 20 minutes.
+
+You do NOT need to know how to code to follow this guide.
+
+
+================================================================
+STEP 1: INSTALL XAMPP (this gives your computer a "mini web server")
+================================================================
+XAMPP is a free program that lets your own computer run websites
+like this one, including the PHP and MySQL it needs.
+
+1. Open your web browser (Chrome, Edge, Firefox - any of them).
+2. Go to: https://www.apachefriends.org/download.html
+3. Click the download button for YOUR operating system
+   (Windows, macOS, or Linux).
+4. Once it finishes downloading, open/run the installer file.
+5. Click "Next" through the installer using the default options.
+   - If Windows shows a security warning, click "Yes" or "Run anyway".
+   - If it asks about components, just leave everything checked and continue.
+6. When installation finishes, click "Finish".
+   (On Windows you may see the XAMPP Control Panel open automatically.)
+
+
+================================================================
+STEP 2: START YOUR SERVER
+================================================================
+1. Open the "XAMPP Control Panel" program.
+   - Windows: search "XAMPP Control Panel" in the Start menu.
+   - Mac: open the "XAMPP" or "Manager-osx" application.
+2. You will see a list of rows including "Apache" and "MySQL".
+3. Click the "Start" button next to APACHE.
+   Wait until it turns green / says "Running".
+4. Click the "Start" button next to MYSQL.
+   Wait until it turns green / says "Running".
+
+If either one fails to start (turns red), the most common cause is
+another program already using that port (e.g. Skype can block port 80).
+Closing other programs and clicking Start again usually fixes it.
+
+
+================================================================
+STEP 3: PUT THE WEBSITE FILES IN THE RIGHT PLACE
+================================================================
+XAMPP looks for websites inside a specific folder called "htdocs".
+
+1. Find your htdocs folder:
+   - Windows:  C:\xampp\htdocs
+   - Mac:      /Applications/XAMPP/htdocsfolder
+               (or /Applications/XAMPP/xamppfiles/htdocs)
+   - Linux:    /opt/lampp/htdocs
+
+2. If you were given a ZIP file called "siwes-system.zip":
+   - Right-click it and choose "Extract All" (Windows) or
+     double-click it (Mac) to unzip it. This creates a folder
+     named "siwes-system".
+
+3. Copy/move that whole "siwes-system" folder INTO the htdocs folder
+   from step 1.
+
+   When you are done, this exact path should exist:
+   - Windows:  C:\xampp\htdocs\siwes-system\index.php
+   - Mac:      /Applications/XAMPP/htdocs/siwes-system/index.php
+
+   (If you see "siwes-system\siwes-system\index.php" - a folder
+   inside a folder - move the inner folder up one level so it
+   matches the path above exactly.)
+
+
+================================================================
+STEP 4: CREATE THE DATABASE
+================================================================
+1. Open your web browser.
+2. Go to this address: http://localhost/phpmyadmin
+3. You will see phpMyAdmin open (no login needed by default).
+4. Click the "Import" tab near the top of the page.
+5. Click "Choose File" (or "Browse").
+6. Navigate to your siwes-system folder, then the "database" folder
+   inside it, and select the file called "schema.sql".
+7. Scroll to the bottom of the page and click the "Go" / "Import" button.
+8. You should see a green success message. A database called
+   "siwes_system" now exists with empty tables, ready to use.
+
+
+================================================================
+STEP 5: CREATE YOUR FIRST LOGIN ACCOUNTS
+================================================================
+1. In your browser, go to:
+   http://localhost/siwes-system/database/seed.php
+2. The page will list some ready-made login accounts on screen,
+   for example an admin account and a couple of demo companies.
+3. WRITE THESE DOWN or take a screenshot - you will need them to log in.
+4. (Optional but recommended once you're done testing: delete the
+   file "database/seed.php" from your folder so nobody else can
+   re-run it. You don't have to do this immediately.)
+
+
+================================================================
+STEP 6: OPEN THE SYSTEM
+================================================================
+1. In your browser, go to:
+   http://localhost/siwes-system/
+2. You should see the SIWES Portal welcome page.
+3. Click "Log in" and use one of the accounts from Step 5
+   (for example the admin account), OR click "Register" to create
+   a brand new student or supervisor account yourself.
+
+That's it - the system is now running on your computer.
+
+
+================================================================
+EVERY TIME YOU WANT TO USE IT AGAIN LATER
+================================================================
+You do NOT need to repeat all the steps above. Just:
+1. Open the XAMPP Control Panel.
+2. Click "Start" next to Apache and "Start" next to MySQL.
+3. Go to http://localhost/siwes-system/ in your browser.
+
+
+================================================================
+TROUBLESHOOTING
+================================================================
+PROBLEM: The page says "Database connection failed".
+FIX: Make sure MySQL is started (green) in the XAMPP Control Panel.
+     Also check that you completed Step 4 (imported schema.sql).
+
+PROBLEM: The page shows a blank white screen, or PHP code as text.
+FIX: Make sure you are visiting the address through
+     "http://localhost/siwes-system/" and not by double-clicking
+     the file directly on your computer. PHP files only work when
+     opened through the server address, never by double-clicking.
+
+PROBLEM: "404 Not Found" when visiting the page.
+FIX: Double-check the folder is really at
+     C:\xampp\htdocs\siwes-system\ (or your Mac/Linux equivalent),
+     and that there isn't an extra folder level (see Step 3 note).
+
+PROBLEM: I forgot the admin password.
+FIX: Re-run http://localhost/siwes-system/database/seed.php -
+     it will simply show you the same accounts again (it does not
+     create duplicates).
+
+PROBLEM: Apache won't start / port 80 is in use.
+FIX: In the XAMPP Control Panel, click "Config" next to Apache ->
+     "Apache (httpd.conf)" and change "Listen 80" to "Listen 8080",
+     and also change "ServerName localhost:80" to "ServerName localhost:8080".
+     Then visit http://localhost:8080/siwes-system/ instead.
